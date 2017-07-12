@@ -155,9 +155,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
         // Google map searching by address name
         // See https://g.co/AppIndexing/AndroidStudio for more information.
-        /** TODO When place is selected from the list, the map should immediately display that location,
-         * instead of having to press "Search location" button.
-         * This is because places shown in autocomplete search are already valid, i.e., they are taken from Google Maps*/
+        /** TODO Fix app crash, after pressing Add alarm*/
         PlaceAutocompleteFragment autocompleteFragment = (PlaceAutocompleteFragment)
                 getFragmentManager().findFragmentById(R.id.place_autocomplete_fragment);
         autocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
@@ -166,6 +164,16 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                 addressGeo = place.getLatLng();
                 addressName = place.getName().toString();
                 Log.i("V", "longitude: " + place.getLatLng().longitude);
+
+                checkGPS();
+                if (addressName != null) {
+                    double lat = addressGeo.latitude;
+                    double lng = addressGeo.longitude;
+                    goToLocationZoom(lat, lng, 15);
+                    setMarker(lat, lng);
+                } else {
+                    Toast.makeText(getApplicationContext(), "No such location found. \nTry a different keyword.", Toast.LENGTH_LONG).show();
+                }
             }
 
             @Override
@@ -328,7 +336,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         googleMap.moveCamera(camUpdate);
     }
 
-    public void geoLocate(@SuppressWarnings("unused") View view) { //NOTE: Attempts to find location, if no suggestions from list are shown
+    /*public void geoLocate(@SuppressWarnings("unused") View view) {
         //It's possible to search by address or geographical coordinates
         checkGPS();
         if (addressName != null) {
@@ -339,7 +347,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         } else {
             Toast.makeText(this, "No such location found. \nTry a different keyword.", Toast.LENGTH_LONG).show();
         }
-    }
+    }*/
 
     void setMarker(double lat, double lng) {
         clearMarker();  // If marker has a reference, remove it.
@@ -421,6 +429,8 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                             }
                         }
                         addLocationDataToList(name, marker);
+                        //FIXME Crashes app when "Save as" is pressed
+                        // Possible fix - comment/delete everything associated with "Search Location" button as they could overlap
                         MapActivity.this.marker.hideInfoWindow();
                     }
                 });
@@ -628,7 +638,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         renewLocationRequest();
         addNotificationIcon();
         // Hide search options
-        findViewById(R.id.button).setVisibility(View.GONE);
+        //findViewById(R.id.button).setVisibility(View.GONE);
         findViewById(R.id.place_autocomplete_fragment).setVisibility(View.GONE);
         // Toggle tracking button view
         Button button = (Button) findViewById(R.id.startpause);
@@ -755,7 +765,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     Estimate getEstimate() {
         if (selectedLocationData == null || !isTracking)
             return Estimate.DISABLED; // tracking disabled
-        else if (interval > 120_000)  // more than 2 minutes for ongoing trackinig
+        else if (interval > 120_000)  // more than 2 minutes for ongoing tracking
             return Estimate.FAR;
         return Estimate.NEAR;         // less than 2 minutes for ongoing, or new request
     }
