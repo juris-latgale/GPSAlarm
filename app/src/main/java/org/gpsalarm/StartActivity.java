@@ -31,21 +31,20 @@ import android.widget.Toast;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.places.Place;
+import com.google.android.gms.location.places.ui.PlaceAutocompleteFragment;
+import com.google.android.gms.location.places.ui.PlaceSelectionListener;
 import com.google.android.gms.maps.model.LatLng;
 
+import java.text.Format;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Map;
-
-/* TODO
-    1) Set AlarmManager reinitialization time
-    2) onCreate - initialize GPS services and perform checks
-    3)
- */
 
 public class StartActivity extends AppCompatActivity
         implements GoogleApiClient.ConnectionCallbacks,
@@ -71,6 +70,13 @@ public class StartActivity extends AppCompatActivity
     WifiManager wifiManager;
 
     private TextView tCurrentLocation;
+
+    public String addressName;
+    public LatLng addressGeo;
+    private double currentLat;
+    private double currentLng;
+    private double destinationLat;
+    private double destinationLng;
 
 
 
@@ -140,7 +146,9 @@ public class StartActivity extends AppCompatActivity
         double currentLatitude = location.getLatitude();
         double currentLongitude = location.getLongitude();
 
-        LatLng latLng = new LatLng(currentLatitude, currentLongitude);
+        setCurrentLat(currentLatitude);
+        setCurrentLng(currentLongitude);
+        //LatLng latLng = new LatLng(currentLatitude, currentLongitude);
         tCurrentLocation.setText("Current location: lat: "+currentLatitude+" lng: "+currentLongitude);
 
         if (inCircle()) isAlarm=true;
@@ -223,6 +231,7 @@ public class StartActivity extends AppCompatActivity
 
 
             setContentView(R.layout.activity_start);
+        tCurrentLocation = (TextView)findViewById(R.id.textView3);
             final ArrayAdapter myAdapter = new CustomAdapter(this, locationDataList);
             ListView listView = (ListView) findViewById(R.id.listView);
 
@@ -279,6 +288,30 @@ public class StartActivity extends AppCompatActivity
             });
 
 
+        PlaceAutocompleteFragment autocompleteFragment = (PlaceAutocompleteFragment)
+                getFragmentManager().findFragmentById(R.id.place_fragment);
+        autocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
+            @Override
+            public void onPlaceSelected(Place place) {
+                addressGeo = place.getLatLng();
+                addressName = place.getName().toString();
+                Log.i("V", "longitude: " + place.getLatLng().longitude);
+
+                if (addressName != null) {
+                    double destLat = addressGeo.latitude;
+                    double destLng = addressGeo.longitude;
+                    setDestinationLat(destLat);
+                    setCurrentLng(destLng);
+                } else {
+                    Toast.makeText(getApplicationContext(), "No such location found. \nTry a different keyword.", Toast.LENGTH_LONG).show();
+                }
+            }
+
+            @Override
+            public void onError(Status status) {
+
+            }
+        });
     }
 
 
@@ -310,8 +343,8 @@ public class StartActivity extends AppCompatActivity
 
 
     public void toMap(@SuppressWarnings("unused") View view) {
-        Intent intent = new Intent(this, MapActivity.class);
-        startActivity(intent);
+        //Intent intent = new Intent(this, MapActivity.class);
+        //startActivity(intent);
     }
 
     @Override
@@ -434,10 +467,42 @@ public class StartActivity extends AppCompatActivity
 
     private void triggerAlarmManager(){
         //pass command to LocationManager
-        
+        double distance;
+        if(addressGeo!=null)    distance = haversine(getCurrentLat(), getCurrentLng(), getDestinationLat(), getDestinationLng());
     }
 
     public int getStatusForAlarm(){
         return statusForAlarm;
+    }
+
+    double haversine(double lat1, double lon1, double lat2, double lon2) {
+        float[] results = new float[1];
+        Location.distanceBetween(lat1, lon1, lat2, lon2, results);
+        return results[0];
+    }
+
+    public void setCurrentLat(double latit){
+        this.currentLat=latit;
+    }
+    public void setCurrentLng(double longi){
+        this.currentLng=longi;
+    }
+    public double getCurrentLat(){
+        return currentLat;
+    }
+    public double getCurrentLng(){
+        return currentLng;
+    }
+    public void setDestinationLat(double latit){
+        this.destinationLat=latit;
+    }
+    public void setDestinationLng(double longi){
+        this.destinationLng=longi;
+    }
+    public double getDestinationLat(){
+        return destinationLat;
+    }
+    public double getDestinationLng(){
+        return destinationLng;
     }
 }

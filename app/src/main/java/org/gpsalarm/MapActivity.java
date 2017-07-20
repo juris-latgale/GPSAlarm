@@ -69,9 +69,6 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import java.util.ArrayList;
-import java.util.concurrent.TimeUnit;
-
-import static android.provider.Settings.System.DEFAULT_ALARM_ALERT_URI;
 
 
 public class MapActivity extends AppCompatActivity
