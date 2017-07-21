@@ -112,6 +112,11 @@ public class MapActivity extends AppCompatActivity
     private PendingIntent pendingIntent;
     private int statusForAlarm;
 
+    private double currentLat=0.0;
+    private double currentLng=0.0;
+    private double destinationLat=0.0;
+    private double destinationLng=0.0;
+
     enum Estimate { // List of travel distance estimation values
         FAR, NEAR, DISABLED;
     }
@@ -120,15 +125,27 @@ public class MapActivity extends AppCompatActivity
     protected void onCreate(Bundle savedInstanceState) {
         Log.v(TAG, "onCreate(MapActivity) started");
         super.onCreate(savedInstanceState);
+
         setInternalStorage();
 
         // Read selected location from Extra of passed intent
-        selectedLocationData = (LocationData) getIntent().getSerializableExtra(InternalStorage.SEL_LOC_DATA_KEY);
+        /*selectedLocationData = (LocationData) getIntent().getSerializableExtra(InternalStorage.SEL_LOC_DATA_KEY);
         if(selectedLocationData!=null)
-            internalStorage.writeLocationData(selectedLocationData,TARGET_ID);
+            internalStorage.writeLocationData(selectedLocationData,TARGET_ID);*/
 
-        checkGPS();
-        checkAndConnect();
+        destinationLat=getIntent().getDoubleExtra("destlat", destinationLat);
+        destinationLng=getIntent().getDoubleExtra("destlng", destinationLng);
+        currentLat =getIntent().getDoubleExtra("currlat", currentLat);
+        currentLng=getIntent().getDoubleExtra("currlng", currentLng);
+
+        Toast.makeText(getApplicationContext(),
+                "Received locations: destlat:"+destinationLat+
+                " destlng: "+destinationLng+" currlat: "+ currentLat+
+                " currlng: "+ currentLng,
+                Toast.LENGTH_LONG).show();
+
+        //checkGPS();
+        //checkAndConnect();
 
         setContentView(R.layout.activity_map);
         initMap();
@@ -154,6 +171,7 @@ public class MapActivity extends AppCompatActivity
 
             }
         };
+
         prefs.registerOnSharedPreferenceChangeListener(prefListener);
         locationDataList = internalStorage.readLocationDataList(); // Retrieve the list from internal storage
 

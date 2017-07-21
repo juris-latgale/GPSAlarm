@@ -343,8 +343,14 @@ public class StartActivity extends AppCompatActivity
 
 
     public void toMap(@SuppressWarnings("unused") View view) {
-        //Intent intent = new Intent(this, MapActivity.class);
-        //startActivity(intent);
+        Intent intent = new Intent(this, MapActivity.class);
+
+        intent.putExtra("destlat", destinationLat);
+        intent.putExtra("destlng", destinationLng);
+        intent.putExtra("currlat", currentLat);
+        intent.putExtra("currlng", currentLng);
+
+        startActivity(intent);
     }
 
     @Override
