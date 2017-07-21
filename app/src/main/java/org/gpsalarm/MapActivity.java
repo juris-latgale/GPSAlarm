@@ -70,7 +70,10 @@ import com.google.android.gms.maps.model.MarkerOptions;
 
 import java.util.ArrayList;
 
-
+/*
+* As of 21.08.2017. this activity is disabled i.e. user cannot access it.
+* Will be reimplemented in near future
+* */
 public class MapActivity extends AppCompatActivity
         implements OnMapReadyCallback,
         GoogleApiClient.ConnectionCallbacks,

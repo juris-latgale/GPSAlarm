@@ -1,33 +1,24 @@
 package org.gpsalarm;
 
-import android.app.ActivityManager;
 import android.app.AlarmManager;
 import android.app.Dialog;
-import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.wifi.WifiManager;
-import android.os.Build;
 import android.os.Bundle;
-import android.os.PowerManager;
 import android.os.SystemClock;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -39,22 +30,22 @@ import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
-import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.Status;
-import com.google.android.gms.location.LocationListener;
-import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.places.Place;
 import com.google.android.gms.location.places.ui.PlaceAutocompleteFragment;
 import com.google.android.gms.location.places.ui.PlaceSelectionListener;
 import com.google.android.gms.maps.model.LatLng;
 
-import java.text.Format;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Map;
 
+/*
+* This activity is the first one to launch when app starts.
+* This activity features GPS tracking, saving and selecting locations into/from list and Google Maps
+* search bar.
+*
+* */
 public class StartActivity extends AppCompatActivity {
 
     final String TAG = "StartActivity";
@@ -62,7 +53,7 @@ public class StartActivity extends AppCompatActivity {
 
     private PendingIntent pendingIntent;
     private boolean currentlyTracking;
-    private int intervalSec = 61;
+    private int intervalSec = 61; //how often to call service (see below)
     private AlarmManager alarmManager;
 
     LocationData selectedLocationData;
@@ -77,8 +68,6 @@ public class StartActivity extends AppCompatActivity {
 
     public String addressName;
     public LatLng addressGeo;
-    private double currentLat;
-    private double currentLng;
     private double destinationLat;
     private double destinationLng;
     private Intent trackGPS;
@@ -142,15 +131,15 @@ public class StartActivity extends AppCompatActivity {
             listView.setAdapter(myAdapter);
 
             final ListView myListView2 = listView;
-            myListView2.setOnItemClickListener(new AdapterView.OnItemClickListener() {        // Dobavlenij kod 21.02.2017
+            myListView2.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override //NOTE: open map, which will show saved point with drawn radius
-                public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) { //Access to MapActivity for this version is restricted
                     selectedLocationData = (LocationData) myAdapter.getItem(i);
                     Toast.makeText(StartActivity.this, "Alarm '" + selectedLocationData.getName() + "' is set", Toast.LENGTH_LONG).show();
-                    Intent myIntent = new Intent(StartActivity.this, MapActivity.class);
-                    myIntent.putExtra(InternalStorage.SEL_LOC_DATA_KEY, selectedLocationData);
-                    Log.i("StartActivity", selectedLocationData.getName() + " is selected");
-                    startActivity(myIntent);
+                    //Intent myIntent = new Intent(StartActivity.this, MapActivity.class);
+                    //myIntent.putExtra(InternalStorage.SEL_LOC_DATA_KEY, selectedLocationData);
+                    //Log.i("StartActivity", selectedLocationData.getName() + " is selected");
+                    //startActivity(myIntent);
                 }
             });
 
@@ -182,6 +171,9 @@ public class StartActivity extends AppCompatActivity {
             });
 
 
+        /*
+        * Google Maps search bar. Allows to search by address
+        * */
         PlaceAutocompleteFragment autocompleteFragment = (PlaceAutocompleteFragment)
                 getFragmentManager().findFragmentById(R.id.place_fragment);
         autocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
@@ -214,14 +206,19 @@ public class StartActivity extends AppCompatActivity {
 
             }
         });
+
+
         trackingButton.setOnClickListener(new View.OnClickListener(){
             public void onClick(View view){
                 trackGPS(view);
             }
         });
-        registerReceiver(updateLocation, new IntentFilter("LOCATION_UPDATE"));
+        registerReceiver(updateLocation, new IntentFilter("LOCATION_UPDATE")); //BroadcastReceiver that receives data from CoordService service
     }
 
+    /*
+    * Setting up BroadcastReceiver to receive data from services via Intents
+    * */
     private BroadcastReceiver updateLocation = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -235,7 +232,7 @@ public class StartActivity extends AppCompatActivity {
         if (!googleServicesAvailable()) {
             return;
         }
-        if (destPassed) {
+        if (destPassed) { //if destination from search bar is set, enable button presses, otherwise restrict it
             if (currentlyTracking) {
                 stopAlarmManager();
                 currentlyTracking = false;
@@ -247,6 +244,9 @@ public class StartActivity extends AppCompatActivity {
         } else Toast.makeText(this, "No destination set", Toast.LENGTH_LONG).show();
     }
 
+    /*
+    * Change button text whether service is running or not
+    * */
     private void setButtonState(){
         if(!currentlyTracking){
             trackingButton.setText("Tracking STOPPED");
@@ -255,6 +255,9 @@ public class StartActivity extends AppCompatActivity {
         }
     }
 
+    /*
+    * Called when activity comes to foreground and can be interacted with
+    * */
     @Override
     protected void onResume(){
         super.onResume();
@@ -262,12 +265,18 @@ public class StartActivity extends AppCompatActivity {
         setButtonState();
     }
 
+    /*
+    * Called when activity cannot be interacted with, but is still in foreground
+    * */
     @Override
     protected void onPause(){
         super.onPause();
         Log.i(TAG, "onPause(StartActivity) called");
     }
 
+    /*
+    * Called when activity goes into background. No actions with UI can be done
+    * */
     @Override
     protected void onStop(){
         super.onStop();
@@ -275,6 +284,9 @@ public class StartActivity extends AppCompatActivity {
 
     }
 
+    /*
+    * Called when activity is destroyed - e.g. closed by swiping or Android OS kills it
+    * */
     @Override
     protected void onDestroy(){
         unregisterReceiver(updateLocation);
@@ -283,6 +295,9 @@ public class StartActivity extends AppCompatActivity {
         Log.i(TAG, "onDestroy(StartActivity) called");
     }
 
+    /*
+    * Method that checks if Google Play Services are available on the device
+    * */
     public boolean googleServicesAvailable() {
         GoogleApiAvailability api = GoogleApiAvailability.getInstance();
         int isAvailable = api.isGooglePlayServicesAvailable(this);      // Can return 3 different values
@@ -302,6 +317,9 @@ public class StartActivity extends AppCompatActivity {
         return false;
     }
 
+    /*
+    * Check if GPS is enabled
+    * */
     public void checkGPS() {
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER))
@@ -327,6 +345,9 @@ public class StartActivity extends AppCompatActivity {
         alert.show();
     }
 
+    /*
+    * Check if WiFi is enabled. WiFi is needed to search for locations, but mobile internet can also be used
+    * */
     public void enableWiFi() {
         wifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         wifiManager.setWifiEnabled(true);
@@ -364,6 +385,9 @@ public class StartActivity extends AppCompatActivity {
         }
     }
 
+    /*
+    * Initiate background service that will track GPS location
+    * */
     private void triggerAlarmManager(){
         Log.d("StartActivity", "triggerAlarmManager");
 
@@ -375,6 +399,9 @@ public class StartActivity extends AppCompatActivity {
         alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, SystemClock.elapsedRealtime(), intervalSec * 1000, pendingIntent);
     }
 
+    /*
+    * Stop initiated background service
+    * */
     private void stopAlarmManager(){
         Log.d("StartActivity", "stopAlarmManager");
         Context context = getBaseContext();
@@ -384,24 +411,7 @@ public class StartActivity extends AppCompatActivity {
         alarmManager.cancel(pendingIntent);
     }
 
-    double haversine(double lat1, double lon1, double lat2, double lon2) {
-        float[] results = new float[1];
-        Location.distanceBetween(lat1, lon1, lat2, lon2, results);
-        return results[0];
-    }
-
-    public void setCurrentLat(double latit){
-        this.currentLat=latit;
-    }
-    public void setCurrentLng(double longi){
-        this.currentLng=longi;
-    }
-    public double getCurrentLat(){
-        return currentLat;
-    }
-    public double getCurrentLng(){
-        return currentLng;
-    }
+    //Helper getters and setters
     public void setDestinationLat(double latit){
         this.destinationLat=latit;
     }

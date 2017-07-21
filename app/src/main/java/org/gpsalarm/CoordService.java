@@ -3,7 +3,6 @@ package org.gpsalarm;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -17,7 +16,10 @@ import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 
-
+/*
+* This is service class which acquires GPS coordinates when started. It can work both in foreground
+* and in background.
+* */
 
 public class CoordService extends Service implements
         GoogleApiClient.ConnectionCallbacks,
@@ -123,8 +125,6 @@ public class CoordService extends Service implements
             i.putExtra("longitude",location.getLongitude());
             sendBroadcast(i);
 
-            // we have our desired accuracy of 500 meters so lets quit this service,
-            // onDestroy will be called and stop our location updates
             if (location.getAccuracy() < 500.0f) {
             }
         }
@@ -147,7 +147,6 @@ public class CoordService extends Service implements
 
         locationRequest = LocationRequest.create();
         locationRequest.setInterval(1*60*1000); // milliseconds
-        //locationRequest.setFastestInterval(1000); // the fastest rate in milliseconds at which your app can handle location updates
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
         try{
